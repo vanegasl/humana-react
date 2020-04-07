@@ -122,7 +122,7 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
     window.location.href = '/';
   };
 
-  async fetchPurchaseData() {
+  fetchPurchaseData = async () => {
     this.setState({ isLoading: true });
     try {
       await login();
@@ -144,15 +144,15 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
       // eslint-disable-next-line no-console
       console.error(error.message);
     }
-  }
+  };
 
-  handleRegisterRequest() {
+  handleRegisterRequest = () => {
     window.location.href = '/registration';
-  }
+  };
 
-  handleNewPrescriptionRequest() {
+  handleNewPrescriptionRequest = () => {
     window.location.href = '/account/requisition-lists';
-  }
+  };
 
   render() {
     // Set the language-specific configuration for indi integration
@@ -185,12 +185,8 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
             handleModalClose={this.handleModalClose}
             openModal={openModal}
             onLogin={this.onLogin}
-            // onResetPassword={onResetPassword}
-            // locationSearchData={locationSearchData}
-            // locationPathName={locationPathName}
             appModalLoginLinks={appModalLoginLinks}
             showForgotPasswordLink={false}
-            // disableLogin={false}
           />
         </div>
         <section className="main-banner">
