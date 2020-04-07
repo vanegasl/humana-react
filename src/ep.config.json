@@ -2,7 +2,7 @@
   "cortexApi": {
     "path": "/cortex",
     "scope": "humana",
-    "pathForProxy": "http://localhost:9080",
+    "pathForProxy": "https://dev6-cortex-gw.ep-dev.humana-poc.epdemos.com",
     "reqTimeout": "30000"
   },
   "supportedLocales": [
