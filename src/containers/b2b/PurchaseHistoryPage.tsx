@@ -31,21 +31,25 @@ import './PurchaseHistoryPage.less';
 
 const zoomArray = [
   'defaultprofile:purchases',
-  'defaultprofile:purchases:element',
+  'defaultprofile:purchases:element'
 ];
 
-interface PurchaseHistoryPageProps extends React.Component<RouteComponentProps> {}
+interface PurchaseHistoryPageProps
+  extends React.Component<RouteComponentProps> {}
 interface PurchaseHistoryPageState {
-  defaultProfile: any,
-  isLoading: boolean,
+  defaultProfile: any;
+  isLoading: boolean;
 }
 
-class PurchaseHistoryPage extends React.Component<PurchaseHistoryPageProps, PurchaseHistoryPageState> {
+class PurchaseHistoryPage extends React.Component<
+  PurchaseHistoryPageProps,
+  PurchaseHistoryPageState
+> {
   constructor(props) {
     super(props);
     this.state = {
       defaultProfile: {},
-      isLoading: false,
+      isLoading: false
     };
   }
 
@@ -60,11 +64,16 @@ class PurchaseHistoryPage extends React.Component<PurchaseHistoryPageProps, Purc
       const res = await cortexFetch(`/?zoom=${zoomArray.sort().join()}`, {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: localStorage.getItem(`${Config.cortexApi.scope}_oAuthToken`),
-        },
+          Authorization: localStorage.getItem(
+            `${Config.cortexApi.scope}_oAuthToken`
+          )
+        }
       });
       const profileData = await res.json();
-      this.setState({ defaultProfile: profileData._defaultprofile[0], isLoading: false });
+      this.setState({
+        defaultProfile: profileData._defaultprofile[0],
+        isLoading: false
+      });
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error(error.message);
@@ -74,17 +83,19 @@ class PurchaseHistoryPage extends React.Component<PurchaseHistoryPageProps, Purc
 
   render() {
     const { defaultProfile, isLoading } = this.state;
-    const purchases = defaultProfile._purchases ? defaultProfile._purchases[0] : {};
+    const purchases = defaultProfile._purchases
+      ? defaultProfile._purchases[0]
+      : {};
     return (
       <div className="purchase-history-page">
         <div className="b2b-header">
           <div className="page-title">{intl.get('purchase-history')}</div>
         </div>
-        {
-          isLoading
-            ? <div className="loader" />
-            : <OrderHistoryMain purchaseHistory={purchases} />
-        }
+        {isLoading ? (
+          <div className="loader" />
+        ) : (
+          <OrderHistoryMain purchaseHistory={purchases} />
+        )}
       </div>
     );
   }

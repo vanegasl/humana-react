@@ -19,11 +19,16 @@
  *
  */
 
+// TODO add redirects to this page / validate paths
+
 import React, { Component } from 'react';
 import intl from 'react-intl-universal';
 import { getConfig, IEpConfig } from '../utils/ConfigProvider';
 import IndiRecommendationsDisplayMain from '../IndiRecommendations/indirecommendations.main';
 import ImageContainer from '../ImageContainer/image.container';
+import BannerCard from './BannerCard';
+import { cortexFetch } from '../utils/Cortex';
+import { login } from '../utils/AuthService';
 
 import './b2c.home.page.less';
 
@@ -37,6 +42,7 @@ import productImage4 from '../../../images/site-images/b2c-product-4.png';
 import productImage5 from '../../../images/site-images/b2c-product-5.png';
 import productImage6 from '../../../images/site-images/b2c-product-6.png';
 import productImage7 from '../../../images/site-images/b2c-product-7.png';
+import { number } from 'prop-types';
 
 let Config: IEpConfig | any = {};
 
@@ -52,489 +58,336 @@ const productFileName6 = 'b2c-product-6.png';
 const productFileName7 = 'b2c-product-7.png';
 
 interface B2CProps {
-    /** handle search page */
-    onSearchPage: (...args: any[]) => any;
-    /** handle redirect to main page */
-    redirectToMainPage: (...args: any[]) => any;
-    /** handle reset password */
-    handleResetPassword: (...args: any[]) => any;
-    /** handle currency change */
-    onCurrencyChange: (...args: any[]) => any;
-    /** handle locale change */
-    onLocaleChange: (...args: any[]) => any;
-    /** handle continue cart */
-    onContinueCart: (...args: any[]) => any;
-    /** handle go back */
-    onGoBack: (...args: any[]) => any;
-    /** checked location */
-    checkedLocation: boolean;
-    /** is in standalone mode */
-    isInStandaloneMode: boolean;
-    /** data location search */
-    locationSearchData?: string;
-    /** location path name */
-    locationPathName?: string;
-    /** links in app header */
-    appHeaderLinks: {
-        [key: string]: any;
-    };
-    /** links in app header login */
-    appHeaderLoginLinks: {
-        [key: string]: any;
-    };
-    /** links in app header navigation */
-    appHeaderNavigationLinks: {
-        [key: string]: any;
-    };
-    /** links in app header top */
-    appHeaderTopLinks: {
-        [key: string]: any;
-    };
-    /** links in app modal login */
-    appModalLoginLinks: {
-        [key: string]: any;
-    };
+  locationPathName?: string;
+  redirectToMainPage: (...args: any[]) => any;
 }
 
 interface B2CState {
-    isLoggedInUser: boolean;
+  isLoggedInUser: boolean;
+  numberOfPurchases: any;
+  isLoading: boolean;
 }
+
+const zoomArray = [
+  'defaultprofile:purchases',
+  'defaultprofile:purchases:element'
+];
 class B2CHomePage extends Component<B2CProps, B2CState> {
-    constructor(props) {
-        super(props);
+  static defaultProps = {
+    locationPathName: '',
+    redirectToMainPage: () => {}
+  };
 
-        const epConfig = getConfig();
-        Config = epConfig.config;
+  constructor(props) {
+    super(props);
 
-        this.state = {
-            isLoggedInUser:
-                localStorage.getItem(`${Config.cortexApi.scope}_oAuthRole`) ===
-                'REGISTERED'
-        };
+    const epConfig = getConfig();
+    Config = epConfig.config;
+
+    this.state = {
+      isLoggedInUser:
+        localStorage.getItem(`${Config.cortexApi.scope}_oAuthRole`) ===
+        'REGISTERED',
+      isLoading: false,
+      numberOfPurchases: null
+    };
+  }
+
+  async componentDidMount() {
+    await this.fetchPurchaseData();
+  }
+
+  async fetchPurchaseData() {
+    this.setState({ isLoading: true });
+    try {
+      await login();
+      const res = await cortexFetch(`/?zoom=${zoomArray.sort().join()}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: localStorage.getItem(
+            `${Config.cortexApi.scope}_oAuthToken`
+          )
+        }
+      });
+
+      const profileData = await res.json();
+
+      console.log(
+        'HEHEHEHH',
+        profileData._defaultprofile[0]._purchases[0]._element.length
+      );
+      const numberOfPurchases =
+        profileData._defaultprofile[0]._purchases[0]._element.length;
+
+      this.setState({ numberOfPurchases: numberOfPurchases, isLoading: false });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(error.message);
     }
+  }
 
-    render() {
-        // Set the language-specific configuration for indi integration
-        Config.indi.brandAmbassador.title = intl.get(
-            'indi-brand-ambassador-title'
-        );
-        Config.indi.brandAmbassador.description = intl.get(
-            'indi-brand-ambassador-description'
-        );
-        Config.indi.brandAmbassador.submit_button_text = intl.get(
-            'indi-brand-ambassador-submit-button-text'
-        );
+  handleLoginRequest() {
+    window.location.href = '/signIn';
+  }
 
-        const { isLoggedInUser } = this.state;
+  handleRegisterRequest() {
+    window.location.href = '/registration';
+  }
 
-        return (
-            <div className="home-page-b2c">
-                <section className="main-banner">
-                    <ImageContainer
-                        className="main-banner-image"
-                        fileName={bannerFileName1}
-                        imgUrl={bannerImage1}
-                    />
-                    <div className="main-banner-title-wrap">
-                        <div className="container">
-                            <h2 className="goods-heading">
-                                {intl.get('b2c-main-banner-heading')}
-                            </h2>
-                            {!isLoggedInUser && ( //TODO swap !
-                                <div className="main-banner-txt">
-                                    <p className="goods-description"></p>
-                                    <div className="btn-wrap"></div>
-                                </div>
-                            )}
-                            {isLoggedInUser && (
-                                <div className="main-banner-txt">
-                                    <p className="goods-description">
-                                        {intl.get('b2c-main-banner-txt')}
-                                    </p>
-                                    <div className="btn-wrap">
-                                        <button
-                                            type="button"
-                                            className="ep-btn primary learn-more-btn"
-                                        >
-                                            {intl.get('learn-more')}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+  handleNewPrescriptionRequest() {
+    window.location.href = '/account/requisition-list-item/:uri';
+  }
+
+  render() {
+    // Set the language-specific configuration for indi integration
+    Config.indi.brandAmbassador.title = intl.get('indi-brand-ambassador-title');
+    Config.indi.brandAmbassador.description = intl.get(
+      'indi-brand-ambassador-description'
+    );
+    Config.indi.brandAmbassador.submit_button_text = intl.get(
+      'indi-brand-ambassador-submit-button-text'
+    );
+
+    const { isLoggedInUser, numberOfPurchases, isLoading } = this.state;
+
+    return (
+      <div className="home-page-b2c">
+        <section className="main-banner">
+          <ImageContainer
+            className="main-banner-image"
+            fileName={bannerFileName1}
+            imgUrl={bannerImage1}
+          />
+          <div className="main-banner-title-wrap">
+            <div className="container">
+              {isLoggedInUser && (
+                <React.Fragment>
+                  <h2 className="goods-heading">
+                    {intl.get('b2c-main-banner-header-logged-in')}
+                  </h2>
+                  <div className="home-banner-card-container">
+                    {
+                      <div className="main-banner-card">
+                        <p className="banner-text-header">
+                          Need a new prescription?
+                        </p>
+                        <p className="banner-text-description">
+                          Get started with Humana Pharmacy.
+                        </p>
+                        <button
+                          onClick={this.handleNewPrescriptionRequest}
+                          type="button"
+                          className="main-banner-btn"
+                        >
+                          Start a new presription
+                        </button>
+                      </div>
+                    }
+                    <div className="main-banner-card">
+                      <p className="banner-text-header">
+                        Check your order status
+                      </p>
+                      {isLoading ? (
+                        <div className="loader" />
+                      ) : (
+                        <BannerCard numberOfPurchases={numberOfPurchases} />
+                      )}
                     </div>
-                </section>
-
-                <IndiRecommendationsDisplayMain
-                    render={['carousel', 'brand']}
-                    configuration={Config.indi}
-                />
-
-                <section className="goods-section-1">
-                    <div className="container">
-                        <div className="main-goods ">
-                            <ul className="main-goods__grid">
-                                <li className="main-goods__cell">
-                                    <div className="main-goods-wrap">
-                                        <div className="goods-info">
-                                            <h5 className="goods-title-small">
-                                                {intl.get('b2c-product1-label')}
-                                            </h5>
-                                            <h3 className="goods-title">
-                                                {intl.get(
-                                                    'b2c-product1-heading'
-                                                )}
-                                            </h3>
-                                            <div className="btn-wrap">
-                                                <button
-                                                    type="button"
-                                                    className="ep-btn primary learn-more-btn"
-                                                >
-                                                    {intl.get('learn-more')}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <ImageContainer
-                                            className="main-goods-image"
-                                            fileName={productFileName1}
-                                            imgUrl={productImage1}
-                                        />
-                                    </div>
-                                </li>
-                                <li className="main-goods__cell">
-                                    <div className="main-goods-wrap">
-                                        <div className="goods-info">
-                                            <h5 className="goods-title-small">
-                                                {intl.get('b2c-product2-label')}
-                                            </h5>
-                                            <h3 className="goods-title">
-                                                {intl.get(
-                                                    'b2c-product2-heading'
-                                                )}
-                                            </h3>
-                                            <p className="goods-description">
-                                                {intl.get(
-                                                    'b2c-product2-description'
-                                                )}
-                                            </p>
-                                        </div>
-                                        <ImageContainer
-                                            className="main-goods-image"
-                                            fileName={productFileName2}
-                                            imgUrl={productImage2}
-                                        />
-                                    </div>
-                                </li>
-                                <li className="main-goods__cell">
-                                    <div className="main-goods-wrap">
-                                        <div className="goods-info">
-                                            <h5 className="goods-title-small">
-                                                {intl.get('b2c-product3-label')}
-                                            </h5>
-                                            <h3 className="goods-title">
-                                                {intl.get(
-                                                    'b2c-product3-heading'
-                                                )}
-                                            </h3>
-                                            <p className="goods-description">
-                                                {intl.get(
-                                                    'b2c-product3-description'
-                                                )}
-                                            </p>
-                                            <button
-                                                type="button"
-                                                className="ep-btn primary learn-more-btn"
-                                            >
-                                                {intl.get('b2c-product3-label')}
-                                            </button>
-                                        </div>
-                                        <ImageContainer
-                                            className="main-goods-image"
-                                            fileName={productFileName3}
-                                            imgUrl={productImage3}
-                                        />
-                                    </div>
-                                </li>
-                                <li className="main-goods__cell">
-                                    <div className="main-goods-wrap">
-                                        <div className="goods-info">
-                                            <h5 className="goods-title-small">
-                                                {intl.get('b2c-product4-label')}
-                                            </h5>
-                                            <h3 className="goods-title">
-                                                {intl.get(
-                                                    'b2c-product4-heading'
-                                                )}
-                                            </h3>
-                                            <p className="goods-description">
-                                                {intl.get(
-                                                    'b2c-product4-description'
-                                                )}
-                                            </p>
-                                        </div>
-                                        <ImageContainer
-                                            className="main-goods-image"
-                                            fileName={productFileName4}
-                                            imgUrl={productImage4}
-                                        />
-                                    </div>
-                                </li>
-                                <li className="main-goods__cell">
-                                    <div className="main-goods-wrap">
-                                        <div className="goods-info">
-                                            <h5 className="goods-title-small">
-                                                {intl.get('b2c-product5-label')}
-                                            </h5>
-                                            <h3 className="goods-title">
-                                                {intl.get(
-                                                    'b2c-product5-heading'
-                                                )}
-                                            </h3>
-                                        </div>
-                                        <ImageContainer
-                                            className="main-goods-image"
-                                            fileName={productFileName5}
-                                            imgUrl={productImage5}
-                                        />
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
+                    <div className="main-banner-card-dummy">
+                      <p className="banner-text-header">Lorem Ipsum</p>
+                      {isLoading ? (
+                        <div className="loader" />
+                      ) : (
+                        <BannerCard numberOfPurchases={numberOfPurchases} />
+                      )}
                     </div>
-                </section>
-
-                <section className="main-banner banner-section-2">
-                    <ImageContainer
-                        className="main-banner-image"
-                        fileName={bannerFileName2}
-                        imgUrl={bannerImage2}
-                    />
-                    <div className="main-banner-title-wrap">
-                        <div className="container">
-                            <h2 className="goods-heading">
-                                {intl.get('b2c-main-banner-heading2')}
-                            </h2>
-                            <div className="main-banner-txt">
-                                <p className="goods-description">
-                                    {intl.get('b2c-main-banner-txt2')}
-                                </p>
-                                <div className="btn-wrap">
-                                    <button
-                                        type="button"
-                                        className="ep-btn primary learn-more-btn"
-                                    >
-                                        {intl.get('learn-more')}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                  </div>
+                </React.Fragment>
+              )}
+              {!isLoggedInUser && (
+                <React.Fragment>
+                  <h2 className="goods-heading">
+                    {intl.get('b2c-main-banner-heading')}
+                  </h2>
+                  <div className="main-banner-txt">
+                    <p className="goods-description">
+                      {intl.get('b2c-main-banner-txt')}
+                    </p>
+                  </div>
+                  <div className="btn-wrap">
+                    <button
+                      type="button"
+                      className="ep-btn primary sign-in-btn"
+                      onClick={this.handleLoginRequest}
+                    >
+                      {intl.get('b2c-main-banner-btn-text')}
+                    </button>
+                    <button
+                      type="button"
+                      className="ep-btn primary register-btn"
+                      onClick={this.handleRegisterRequest}
+                    >
+                      {intl.get('register-new-account')}
+                    </button>
+                  </div>
+                </React.Fragment>
+              )}
             </div>
-        );
-    }
+          </div>
+        </section>
+
+        <IndiRecommendationsDisplayMain
+          render={['carousel', 'brand']}
+          configuration={Config.indi}
+        />
+
+        <section className="goods-section-1">
+          <div className="container">
+            <div className="main-goods ">
+              <ul className="main-goods__grid">
+                <li className="main-goods__cell">
+                  <div className="main-goods-wrap">
+                    <div className="goods-info">
+                      <h5 className="goods-title-small">
+                        {intl.get('b2c-product1-label')}
+                      </h5>
+                      <h3 className="goods-title">
+                        {intl.get('b2c-product1-heading')}
+                      </h3>
+                      <div className="btn-wrap">
+                        <button
+                          type="button"
+                          className="ep-btn primary learn-more-btn"
+                        >
+                          {intl.get('learn-more')}
+                        </button>
+                      </div>
+                    </div>
+                    <ImageContainer
+                      className="main-goods-image"
+                      fileName={productFileName1}
+                      imgUrl={productImage1}
+                    />
+                  </div>
+                </li>
+                <li className="main-goods__cell">
+                  <div className="main-goods-wrap">
+                    <div className="goods-info">
+                      <h5 className="goods-title-small">
+                        {intl.get('b2c-product2-label')}
+                      </h5>
+                      <h3 className="goods-title">
+                        {intl.get('b2c-product2-heading')}
+                      </h3>
+                      <p className="goods-description">
+                        {intl.get('b2c-product2-description')}
+                      </p>
+                    </div>
+                    <ImageContainer
+                      className="main-goods-image"
+                      fileName={productFileName2}
+                      imgUrl={productImage2}
+                    />
+                  </div>
+                </li>
+                <li className="main-goods__cell">
+                  <div className="main-goods-wrap">
+                    <div className="goods-info">
+                      <h5 className="goods-title-small">
+                        {intl.get('b2c-product3-label')}
+                      </h5>
+                      <h3 className="goods-title">
+                        {intl.get('b2c-product3-heading')}
+                      </h3>
+                      <p className="goods-description">
+                        {intl.get('b2c-product3-description')}
+                      </p>
+                      <button
+                        type="button"
+                        className="ep-btn primary learn-more-btn"
+                      >
+                        {intl.get('b2c-product3-label')}
+                      </button>
+                    </div>
+                    <ImageContainer
+                      className="main-goods-image"
+                      fileName={productFileName3}
+                      imgUrl={productImage3}
+                    />
+                  </div>
+                </li>
+                <li className="main-goods__cell">
+                  <div className="main-goods-wrap">
+                    <div className="goods-info">
+                      <h5 className="goods-title-small">
+                        {intl.get('b2c-product4-label')}
+                      </h5>
+                      <h3 className="goods-title">
+                        {intl.get('b2c-product4-heading')}
+                      </h3>
+                      <p className="goods-description">
+                        {intl.get('b2c-product4-description')}
+                      </p>
+                    </div>
+                    <ImageContainer
+                      className="main-goods-image"
+                      fileName={productFileName4}
+                      imgUrl={productImage4}
+                    />
+                  </div>
+                </li>
+                <li className="main-goods__cell">
+                  <div className="main-goods-wrap">
+                    <div className="goods-info">
+                      <h5 className="goods-title-small">
+                        {intl.get('b2c-product5-label')}
+                      </h5>
+                      <h3 className="goods-title">
+                        {intl.get('b2c-product5-heading')}
+                      </h3>
+                    </div>
+                    <ImageContainer
+                      className="main-goods-image"
+                      fileName={productFileName5}
+                      imgUrl={productImage5}
+                    />
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="main-banner banner-section-2">
+          <ImageContainer
+            className="main-banner-image"
+            fileName={bannerFileName2}
+            imgUrl={bannerImage2}
+          />
+          <div className="main-banner-title-wrap">
+            <div className="container">
+              <h2 className="goods-heading">
+                {intl.get('b2c-main-banner-heading2')}
+              </h2>
+              <div className="main-banner-txt">
+                <p className="goods-description">
+                  {intl.get('b2c-main-banner-txt2')}
+                </p>
+                <div className="btn-wrap">
+                  <button
+                    type="button"
+                    className="ep-btn primary learn-more-btn"
+                  >
+                    {intl.get('learn-more')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 }
-
-// const B2CHomePage: React.FunctionComponent = () => {
-//     const epConfig = getConfig();
-//     Config = epConfig.config;
-
-//     // Set the language-specific configuration for indi integration
-//     Config.indi.brandAmbassador.title = intl.get('indi-brand-ambassador-title');
-//     Config.indi.brandAmbassador.description = intl.get(
-//         'indi-brand-ambassador-description'
-//     );
-//     Config.indi.brandAmbassador.submit_button_text = intl.get(
-//         'indi-brand-ambassador-submit-button-text'
-//     );
-
-//     return (
-//         <div className="home-page-b2c">
-//             <section className="main-banner">
-//                 <ImageContainer
-//                     className="main-banner-image"
-//                     fileName={bannerFileName1}
-//                     imgUrl={bannerImage1}
-//                 />
-//                 <div className="main-banner-title-wrap">
-//                     <div className="container">
-//                         <h2 className="goods-heading">
-//                             {intl.get('b2c-main-banner-heading')}
-//                         </h2>
-//                         <div className="main-banner-txt">
-//                             <p className="goods-description">
-//                                 {intl.get('b2c-main-banner-txt')}
-//                             </p>
-//                             <div className="btn-wrap">
-//                                 <button
-//                                     type="button"
-//                                     className="ep-btn primary learn-more-btn"
-//                                 >
-//                                     {intl.get('learn-more')}
-//                                 </button>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </section>
-
-//             <IndiRecommendationsDisplayMain
-//                 render={['carousel', 'brand']}
-//                 configuration={Config.indi}
-//             />
-
-//             <section className="goods-section-1">
-//                 <div className="container">
-//                     <div className="main-goods ">
-//                         <ul className="main-goods__grid">
-//                             <li className="main-goods__cell">
-//                                 <div className="main-goods-wrap">
-//                                     <div className="goods-info">
-//                                         <h5 className="goods-title-small">
-//                                             {intl.get('b2c-product1-label')}
-//                                         </h5>
-//                                         <h3 className="goods-title">
-//                                             {intl.get('b2c-product1-heading')}
-//                                         </h3>
-//                                         <div className="btn-wrap">
-//                                             <button
-//                                                 type="button"
-//                                                 className="ep-btn primary learn-more-btn"
-//                                             >
-//                                                 {intl.get('learn-more')}
-//                                             </button>
-//                                         </div>
-//                                     </div>
-//                                     <ImageContainer
-//                                         className="main-goods-image"
-//                                         fileName={productFileName1}
-//                                         imgUrl={productImage1}
-//                                     />
-//                                 </div>
-//                             </li>
-//                             <li className="main-goods__cell">
-//                                 <div className="main-goods-wrap">
-//                                     <div className="goods-info">
-//                                         <h5 className="goods-title-small">
-//                                             {intl.get('b2c-product2-label')}
-//                                         </h5>
-//                                         <h3 className="goods-title">
-//                                             {intl.get('b2c-product2-heading')}
-//                                         </h3>
-//                                         <p className="goods-description">
-//                                             {intl.get(
-//                                                 'b2c-product2-description'
-//                                             )}
-//                                         </p>
-//                                     </div>
-//                                     <ImageContainer
-//                                         className="main-goods-image"
-//                                         fileName={productFileName2}
-//                                         imgUrl={productImage2}
-//                                     />
-//                                 </div>
-//                             </li>
-//                             <li className="main-goods__cell">
-//                                 <div className="main-goods-wrap">
-//                                     <div className="goods-info">
-//                                         <h5 className="goods-title-small">
-//                                             {intl.get('b2c-product3-label')}
-//                                         </h5>
-//                                         <h3 className="goods-title">
-//                                             {intl.get('b2c-product3-heading')}
-//                                         </h3>
-//                                         <p className="goods-description">
-//                                             {intl.get(
-//                                                 'b2c-product3-description'
-//                                             )}
-//                                         </p>
-//                                         <button
-//                                             type="button"
-//                                             className="ep-btn primary learn-more-btn"
-//                                         >
-//                                             {intl.get('b2c-product3-label')}
-//                                         </button>
-//                                     </div>
-//                                     <ImageContainer
-//                                         className="main-goods-image"
-//                                         fileName={productFileName3}
-//                                         imgUrl={productImage3}
-//                                     />
-//                                 </div>
-//                             </li>
-//                             <li className="main-goods__cell">
-//                                 <div className="main-goods-wrap">
-//                                     <div className="goods-info">
-//                                         <h5 className="goods-title-small">
-//                                             {intl.get('b2c-product4-label')}
-//                                         </h5>
-//                                         <h3 className="goods-title">
-//                                             {intl.get('b2c-product4-heading')}
-//                                         </h3>
-//                                         <p className="goods-description">
-//                                             {intl.get(
-//                                                 'b2c-product4-description'
-//                                             )}
-//                                         </p>
-//                                     </div>
-//                                     <ImageContainer
-//                                         className="main-goods-image"
-//                                         fileName={productFileName4}
-//                                         imgUrl={productImage4}
-//                                     />
-//                                 </div>
-//                             </li>
-//                             <li className="main-goods__cell">
-//                                 <div className="main-goods-wrap">
-//                                     <div className="goods-info">
-//                                         <h5 className="goods-title-small">
-//                                             {intl.get('b2c-product5-label')}
-//                                         </h5>
-//                                         <h3 className="goods-title">
-//                                             {intl.get('b2c-product5-heading')}
-//                                         </h3>
-//                                     </div>
-//                                     <ImageContainer
-//                                         className="main-goods-image"
-//                                         fileName={productFileName5}
-//                                         imgUrl={productImage5}
-//                                     />
-//                                 </div>
-//                             </li>
-//                         </ul>
-//                     </div>
-//                 </div>
-//             </section>
-
-//             <section className="main-banner banner-section-2">
-//                 <ImageContainer
-//                     className="main-banner-image"
-//                     fileName={bannerFileName2}
-//                     imgUrl={bannerImage2}
-//                 />
-//                 <div className="main-banner-title-wrap">
-//                     <div className="container">
-//                         <h2 className="goods-heading">
-//                             {intl.get('b2c-main-banner-heading2')}
-//                         </h2>
-//                         <div className="main-banner-txt">
-//                             <p className="goods-description">
-//                                 {intl.get('b2c-main-banner-txt2')}
-//                             </p>
-//                             <div className="btn-wrap">
-//                                 <button
-//                                     type="button"
-//                                     className="ep-btn primary learn-more-btn"
-//                                 >
-//                                     {intl.get('learn-more')}
-//                                 </button>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </section>
-//         </div>
-//     );
-// };
 
 export default B2CHomePage;
