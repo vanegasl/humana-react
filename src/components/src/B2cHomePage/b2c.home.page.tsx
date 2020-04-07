@@ -19,13 +19,16 @@
  *
  */
 
-// TODO add redirects to this page / validate paths
+// TODO add redirects to the prescription page -
 
 import React, { Component } from 'react';
 import intl from 'react-intl-universal';
 import { getConfig, IEpConfig } from '../utils/ConfigProvider';
 import IndiRecommendationsDisplayMain from '../IndiRecommendations/indirecommendations.main';
 import ImageContainer from '../ImageContainer/image.container';
+
+import AppModalLoginMain from '../AppModalLogin/appmodallogin.main';
+
 import BannerCard from './BannerCard';
 import { cortexFetch } from '../utils/Cortex';
 import { login } from '../utils/AuthService';
@@ -66,6 +69,9 @@ interface B2CState {
   isLoggedInUser: boolean;
   numberOfPurchases: any;
   isLoading: boolean;
+  openModal: boolean;
+  loginUrlAddress: string;
+  oidcParameters: any;
 }
 
 const zoomArray = [
@@ -89,13 +95,32 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
         localStorage.getItem(`${Config.cortexApi.scope}_oAuthRole`) ===
         'REGISTERED',
       isLoading: false,
-      numberOfPurchases: null
+      numberOfPurchases: null,
+      openModal: false,
+      loginUrlAddress: '',
+      oidcParameters: {}
     };
   }
 
   async componentDidMount() {
     await this.fetchPurchaseData();
   }
+
+  handleModalOpen = () => {
+    this.setState({
+      openModal: true
+    });
+  };
+
+  handleModalClose = () => {
+    this.setState({
+      openModal: false
+    });
+  };
+
+  onLogin = () => {
+    window.location.href = '/';
+  };
 
   async fetchPurchaseData() {
     this.setState({ isLoading: true });
@@ -111,11 +136,6 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
       });
 
       const profileData = await res.json();
-
-      console.log(
-        'HEHEHEHH',
-        profileData._defaultprofile[0]._purchases[0]._element.length
-      );
       const numberOfPurchases =
         profileData._defaultprofile[0]._purchases[0]._element.length;
 
@@ -126,16 +146,12 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
     }
   }
 
-  handleLoginRequest() {
-    window.location.href = '/signIn';
-  }
-
   handleRegisterRequest() {
     window.location.href = '/registration';
   }
 
   handleNewPrescriptionRequest() {
-    window.location.href = '/account/requisition-list-item/:uri';
+    window.location.href = '/account/requisition-lists';
   }
 
   render() {
@@ -148,10 +164,35 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
       'indi-brand-ambassador-submit-button-text'
     );
 
-    const { isLoggedInUser, numberOfPurchases, isLoading } = this.state;
+    const appModalLoginLinks = {
+      registration: ''
+    };
+
+    const {
+      isLoggedInUser,
+      numberOfPurchases,
+      isLoading,
+      openModal,
+      oidcParameters
+    } = this.state;
 
     return (
       <div className="home-page-b2c">
+        <div className={`app-login-component`}>
+          <AppModalLoginMain
+            key="app-modal-login-main"
+            oidcParameters={oidcParameters}
+            handleModalClose={this.handleModalClose}
+            openModal={openModal}
+            onLogin={this.onLogin}
+            // onResetPassword={onResetPassword}
+            // locationSearchData={locationSearchData}
+            // locationPathName={locationPathName}
+            appModalLoginLinks={appModalLoginLinks}
+            showForgotPasswordLink={false}
+            // disableLogin={false}
+          />
+        </div>
         <section className="main-banner">
           <ImageContainer
             className="main-banner-image"
@@ -193,17 +234,10 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
                         <BannerCard numberOfPurchases={numberOfPurchases} />
                       )}
                     </div>
-                    <div className="main-banner-card-dummy">
-                      <p className="banner-text-header">Lorem Ipsum</p>
-                      {isLoading ? (
-                        <div className="loader" />
-                      ) : (
-                        <BannerCard numberOfPurchases={numberOfPurchases} />
-                      )}
-                    </div>
                   </div>
                 </React.Fragment>
               )}
+              <div className="login-container"></div>
               {!isLoggedInUser && (
                 <React.Fragment>
                   <h2 className="goods-heading">
@@ -218,7 +252,7 @@ class B2CHomePage extends Component<B2CProps, B2CState> {
                     <button
                       type="button"
                       className="ep-btn primary sign-in-btn"
-                      onClick={this.handleLoginRequest}
+                      onClick={this.handleModalOpen}
                     >
                       {intl.get('b2c-main-banner-btn-text')}
                     </button>

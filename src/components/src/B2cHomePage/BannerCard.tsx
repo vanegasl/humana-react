@@ -15,7 +15,7 @@ interface BannerCardState {
   isLoading: boolean;
 }
 
-class BannerCard extends Component {
+class BannerCard extends Component<BannerCardProps, BannerCardState> {
   static defaultProps = {
     numberOfPurchases: 0
   };
